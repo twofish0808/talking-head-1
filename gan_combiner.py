@@ -10,7 +10,6 @@ from torch import optim
 from torch.autograd import Variable
 from torch.utils.data import Dataset, DataLoader
 import matplotlib.pyplot as plt
-# from tensorflow import keras
 import time
 import numpy as np
 from matplotlib.pyplot import imshow
@@ -25,7 +24,6 @@ from tha.combiner import Combiner
 
 from time_controler.switch import switch
 from test import test
-# from gan_facerotater import compose_tensor
 print(torch.cuda.is_available())
 print(torch.cuda.get_device_name(torch.cuda.current_device()))
 
@@ -60,9 +58,6 @@ with open(labelTxt, 'r') as f:
 for i in range(len(labelList)):
     labelList[i] = labelList[i][:-1]    
 
-#print(imgList[-1])    
-#print(resultList[-1])    
-#print(labelList[-1])
 
 
 # In[4]:
@@ -154,7 +149,6 @@ def compose_tensor(input):
 # In[5]:
 
 
-import torchvision  
 print(torchvision.__version__)
 
 
@@ -183,10 +177,7 @@ G_model.load_state_dict(torch.load('./combiner.pt'))
 
 
 
-# for name,param in model2.named_parameters():
-#     if "zhou_grid_change" in name:
-#         print("lock")
-#         param.requires_grad = False
+
 #定義loss
 criterion = nn.L1Loss()
 # criterion = perceptual_loss()
@@ -194,9 +185,7 @@ criterion1=nn.BCELoss()
 #Adam為一種梯度下降優化演算法
 G_optimizer = torch.optim.Adam(G_model.parameters(), lr=0.0001, betas = (0.5,0.999))
 D_optimizer = torch.optim.Adam(D_model.parameters(), lr=0.00000007, betas = (0.5,0.999))
-#0.002 0.000002 is too slow loss 0.5 0.2
-#0.002 0.00001 is too high
-#0.002 0.000004  is too low loss 0.5 0.25
+
 
 
 model2.eval()
@@ -244,15 +233,9 @@ while True:
             final_image2=compose_tensor(final_image)
             c=D_model(final_image2,pose)
 
-            
 
-            # r1,r2,r3=D_model(rr)
-  
-            # print(r1)
             Gan_loss=criterion1(c,Variable(torch.ones(c.size())).cuda())
 
-
-            # Gan_loss=criterion1(c1,torch.ones(c1.size()).cuda())+criterion1(c2,torch.ones(c2.size()).cuda())+criterion1(c3,torch.ones(c3.size()).cuda())+criterion1(r1,torch.ones(r1.size()).cuda())+criterion1(r2,torch.ones(r2.size()).cuda())+criterion1(r3,torch.ones(r3.size()).cuda())
             pix_loss=criterion(final_image,target)
 
 
@@ -266,28 +249,16 @@ while True:
 
             D_model.train()
             D_optimizer.zero_grad()
-            # tt=torch.cat([target,pose],dim=1)
-            # t1,t2,t3=D_model(tt)
+
             target2=target
             target2=compose_tensor(target2)
             t1=D_model(target2,pose)
-            # GAN2_loss=criterion1(t1,torch.ones(t1.size()).cuda())+criterion1(t2,torch.ones(t2.size()).cuda())+criterion1(t3,torch.ones(t3.size()).cuda())
+
             GAN2_loss=criterion1(t1,Variable(torch.ones(t1.size())).cuda())
    
-            
-            # fc=torch.cat([color_changed.detach(),pose],dim=1)
-            
-            
-            # fr=torch.cat([resampled.detach(),pose],dim=1)
-            
-            # f1,f2,f3=D_model(fc)
-            # print(f1)
-            # print(f2)
-            # print(f3)
-            # fr1,fr2,fr3=D_model(fr)
+
             finalImage=compose_tensor(final_image.detach())
             f_fake=D_model(finalImage,pose)
-            # GAN3_loss=criterion1(f1,torch.zeros(f1.size()).cuda())+criterion1(f2,torch.zeros(f2.size()).cuda())+criterion1(f3,torch.zeros(f3.size()).cuda())+criterion1(fr1,torch.zeros(fr1.size()).cuda())+criterion1(fr2,torch.zeros(fr2.size()).cuda())+criterion1(fr3,torch.zeros(fr3.size()).cuda())
             GAN3_loss=criterion1(f_fake,Variable(torch.zeros(f_fake.size())).cuda())
             D_loss=(GAN2_loss+GAN3_loss)/2
             D_loss.backward()
@@ -323,20 +294,7 @@ while True:
                 ee=unloader(ee[0]).save("D:/train_file/C_final_image.png")
             except:
                 pass
-            # if count%2000==0:
-            #     unloader = transforms.ToPILImage()
-            #     original=img.cpu().clone()
-            #     original = unloader(original[0]).save("D:/train_file/A_original"+str(epoch)+"_"+str(count)+".png")
-            #     target1 = target.cpu().clone()
-            #     target1 = unloader(target1[0]).save("D:/train_file/A_target1"+str(epoch)+"_"+str(count)+".png")
-            #     color_cd1 = color_changed.cpu().clone()
-            #     color_cd1 = unloader(color_cd1[0]).save("D:/train_file/R_color_changed"+str(epoch)+"_"+str(count)+".png")
-            #     resampled1 = resampled.cpu().clone()
-            #     resampled1 = unloader(resampled1[0]).save("D:/train_file/R_resampled"+str(epoch)+"_"+str(count)+".png")
-            #     color_change1 = color_change.cpu().clone()
-            #     color_change1 = unloader(color_change1[0]).save("D:/train_file/R_color_change"+str(epoch)+"_"+str(count)+".png")
 
-            #計算epoch的loss之和，並準備下一次訓練
             epoch_loss += pix_loss.item()
 
             print('epoch:[{}], batch:[{}/{}], G_GAN:[{}], G_PIX:[{}], G_full[{}], D_GAN[{}], time:[{}:{}]'.format(epoch, count, len(img_dataloader), round(Gan_loss.item(),4),round(pix_loss.item(),4),round(loss.item(),4),round(D_loss.item(),4),int((time.time()-startTime)/60/60), int((time.time()-startTime)/60%60)))
@@ -346,50 +304,14 @@ while True:
                 torch.save(D_model.state_dict(), './D_model2.pt')
                 print('save successfully')
 
-            #每執行50次進行一次存檔
-    #         if count % 50 == 0 :
-    #             torch.save(model2.state_dict(), './checkpoints/two_algo_face_rotator/two_algo_face_rotator.pt')
-    #             print('save successfully')
-            
-    #         if count % 6000 ==0:
-    #             localtime1 = time.localtime()
-    #             result_time = time.strftime("%Y%m%d%I%M%p", localtime1)
-    #             os.system('xcopy "D:/talking-head-anime-demo-master/checkpoints/two_algo_face_rotator" "E:/face_rotater"')
-    #             old_path="E:/face_rotater/two_algo_face_rotator.pt"
-    #             f_name="E:/face_rotater/two_algo_face_rotator_more"+str(result_time)+".pt"
-    #             os.rename(old_path,f_name)
-    #         if count%500==0:
-    #             localtime1 = time.localtime()
-    #             result_time = time.strftime("%Y%m%d%I%M%p", localtime1)
-    #             inform=str(result_time)+"_"+str(epoch)+"epoch_"
-    #             test(str(inform))
-    #             switch(result_time)
-    #             model2.train()
-    #         torch.cuda.empty_cache()
-            
-    #     #完成一個epoch後進行存檔        
-    #     torch.save(model2.state_dict(),"./checkpoints/two_algo_face_rotator/two_algo_face_rotator.pt")
-    #     print("save_successfully")
 
         if (epoch+1)%10==0:
             torch.save(G_model.state_dict(), './combiner.pt')
             torch.save(D_model.state_dict(), './D_model2.pt')
             print('save successfully')
-    #     if (epoch+1) %60==0:
-    #             localtime1 = time.localtime()
-    #             result_time = time.strftime("%Y%m%d%I%M%p", localtime1)
-    #             os.system('xcopy "D:/talking-head-anime-demo-master/checkpoints/two_algo_face_rotator" "E:/face_rotater"')
-    #             old_path="E:/face_rotater/two_algo_face_rotator.pt"
-    #             f_name="E:/face_rotater/two_algo_face_rotator_more"+str(result_time)+".pt"
-    #             os.rename(old_path,f_name)
-    #     #輸出本輪解果
-       
-    # torch.save(model2.state_dict(),"./checkpoints/two_algo_face_rotator/two_algo_face_rotator.pt")
-
-    # In[ ]:
 
 
 
 
 
-# %%
+
